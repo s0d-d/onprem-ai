@@ -1,0 +1,18 @@
+Metadata-Version: 2.4
+Name: livekit-plugins-offline
+Version: 0.1.0
+Summary: Offline plugins for LiveKit Agents
+Author: Sod-Erdene Dalaikhuu
+Author-email: dadk62@inf.elte.hu
+Requires-Python: >=3.8.10
+Requires-Dist: livekit-agents>=0.12.20
+Requires-Dist: livekit-plugins-silero>=0.1.0
+Requires-Dist: openai-whisper>=20231117
+Requires-Dist: torch>=2.0.0
+Requires-Dist: numpy>=1.20.0
+Requires-Dist: httpx>=0.24.0
+Dynamic: author
+Dynamic: author-email
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

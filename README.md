@@ -1,4 +1,4 @@
-# LiveKit Offline Voice Agent
+# On Premise AI Voice Agent
 
 This package provides offline components for creating a fully local voice agent using LiveKit Agents.
 

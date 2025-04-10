@@ -1,0 +1,6 @@
+livekit-agents>=0.12.20
+livekit-plugins-silero>=0.1.0
+openai-whisper>=20231117
+torch>=2.0.0
+numpy>=1.20.0
+httpx>=0.24.0
