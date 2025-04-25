@@ -1,0 +1,198 @@
+---
+# Namespace for the offline voice agent application
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: offline-voice-agent
+
+---
+# ConfigMap for environment variables and configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-config
+  namespace: offline-voice-agent
+data:
+  LIVEKIT_URL: "wss://ms.global.stunner.cc"
+  LIVEKIT_API_KEY: "access_token"
+  LIVEKIT_API_SECRET: "secret"
+  OLLAMA_BASE_URL: "http://ollama.offline-voice-agent.svc.cluster.local:11434/v1"
+  OLLAMA_MODEL: "smollm2:135m"
+  KOKORO_BASE_URL: "http://kokoro-tts.offline-voice-agent.svc.cluster.local:8880/v1"
+
+
+---
+# PersistentVolumeClaim for model storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-storage
+  namespace: offline-voice-agent
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# Deployment for Ollama
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: offline-voice-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          command: ["ollama", "serve"]
+          ports:
+            - containerPort: 11434
+          volumeMounts:
+            - name: model-storage
+              mountPath: /root/.ollama
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+      volumes:
+        - name: model-storage
+          persistentVolumeClaim:
+            claimName: model-storage
+      initContainers:
+        - name: download-model
+          image: ollama/ollama:latest
+          command:
+            - "sh"
+            - "-c"
+            - "ollama pull smollm2:135m"
+          volumeMounts:
+            - name: model-storage
+              mountPath: /root/.ollama
+
+---
+# Service for Ollama
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: offline-voice-agent
+spec:
+  ports:
+    - port: 11434
+      targetPort: 11434
+      protocol: TCP
+  selector:
+    app: ollama
+
+---
+# Deployment for Kokoro TTS API
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kokoro-tts
+  namespace: offline-voice-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kokoro-tts
+  template:
+    metadata:
+      labels:
+        app: kokoro-tts
+    spec:
+      containers:
+        - name: kokoro-tts
+          image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
+          # Use GPU image if GPU is available:
+          # image: ghcr.io/remsky/kokoro-fastapi-gpu:latest
+          ports:
+            - containerPort: 8880
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1"
+
+---
+# Service for Kokoro TTS API
+apiVersion: v1
+kind: Service
+metadata:
+  name: kokoro-tts
+  namespace: offline-voice-agent
+spec:
+  ports:
+    - port: 8880
+      targetPort: 8880
+  selector:
+    app: kokoro-tts
+
+---
+# Deployment for main agent application
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voice-agent
+  namespace: offline-voice-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: voice-agent
+  template:
+    metadata:
+      labels:
+        app: voice-agent
+    spec:
+      containers:
+        - name: voice-agent
+          image: voice-agent:latest # You'll need to build this image with your code
+          command: ["python", "local.py", "dev"]
+          env:
+            - name: LIVEKIT_API_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: agent-config
+                  key: LIVEKIT_API_KEY
+            - name: LIVEKIT_API_SECRET
+              valueFrom:
+                configMapKeyRef:
+                  name: agent-config
+                  key: LIVEKIT_API_SECRET
+          volumeMounts:
+            - name: app-code
+              mountPath: /app
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1"
+      volumes:
+        - name: app-code
+          emptyDir: {}
+      initContainers:
+        - name: download-files
+          image: voice-agent:latest # Same image as main container
+          command: ["python", "local.py", "download-files"]
+          volumeMounts:
+            - name: app-code
+              mountPath: /app

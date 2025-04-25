@@ -15,9 +15,9 @@ from livekit.agents.llm.llm import LLMTools
 from livekit.plugins import silero
 
 # Import our custom plugins
-from livekit.plugins.whisper import WhisperSTT
-from livekit.plugins.piper import PiperTTS
-from livekit.plugins.ollama import OllamaLLM
+from livekit_local.plugins.whisper import WhisperSTT
+from livekit_local.plugins.piper import PiperTTS
+from livekit_local.plugins.ollama import OllamaLLM
 
 # SQLite database for storing notes and reminders
 DB_PATH = "offline_agent.db"

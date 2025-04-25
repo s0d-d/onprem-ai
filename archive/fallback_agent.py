@@ -10,9 +10,9 @@ from livekit.agents import (
 from livekit.plugins import silero
 
 # Import our custom plugins
-from livekit.plugins.whisper import WhisperSTT
-from livekit.plugins.piper import PiperTTS
-from livekit.plugins.ollama import OllamaLLM
+from livekit_local.plugins.whisper import WhisperSTT
+from livekit_local.plugins.piper import PiperTTS
+from livekit_local.plugins.ollama import OllamaLLM
 
 async def create_fallback_agent():
     parser = argparse.ArgumentParser(description='Run an offline voice agent with fallbacks')
